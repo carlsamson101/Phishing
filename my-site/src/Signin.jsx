@@ -56,7 +56,7 @@ useEffect(() => {
     // 4. Notify the counter dashboard tab to update instantly
     window.dispatchEvent(new Event("storage"));
   }
-}, []);
+ [];
 
 
 const processInterception = async () => {
