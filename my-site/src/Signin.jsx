@@ -4,6 +4,8 @@ export default function Signin() {
   
   // NEW: Record page opens on component mount
 useEffect(() => {
+
+  document.title = "Sign in to My.IIT"; // Set page title on load
   // Check if this specific refresh has already been counted
   const alreadyCountedThisRefresh = sessionStorage.getItem("page_view_session");
 

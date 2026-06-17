@@ -21,6 +21,7 @@ export default function Counter() {
   };
 
   useEffect(() => {
+    document.title = "Student Emails Dashboard";
     updateDashboard();
     window.addEventListener('storage', updateDashboard);
     return () => {
