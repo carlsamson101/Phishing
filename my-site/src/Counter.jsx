@@ -8,7 +8,6 @@ export default function Counter() {
 
   // Inside your Counter component, replace updateDashboard with a live pull:
 const updateDashboard = async () => {
-  // Fetch captured credentials
   const { data: emailData } = await supabase
     .from('captured_data')
     .select('*')
@@ -16,8 +15,9 @@ const updateDashboard = async () => {
 
   if (emailData) {
     const cleanedRecords = emailData.map(record => {
-      if (record.savedAt && record.savedAt.includes(',')) {
-        return { ...record, savedAt: record.savedAt.split(',')[0] };
+      // Look for record.saved_at instead of record.savedAt
+      if (record.saved_at && record.saved_at.includes(',')) {
+        return { ...record, saved_at: record.saved_at.split(',')[0] };
       }
       return record;
     });
@@ -181,21 +181,22 @@ const updateDashboard = async () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {visibleRecords.map((record, index) => (
-                      <tr key={index} onClick={(e) => handleEditDate(index, e)} className="data-row">
-                        <td className="data-cell-email">{record.email}</td>
-                        <td className="data-cell-date">{record.savedAt}</td>
-                        <td style={{ textAlign: 'center', padding: '8px' }}>
-                          <button 
-                            className="delete-btn" 
-                            onClick={(e) => handleDeleteRow(index, record.email, e)}
-                          >
-                            Remove
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
+  {visibleRecords.map((record, index) => (
+    <tr key={index} onClick={(e) => handleEditDate(index, e)} className="data-row">
+      <td className="data-cell-email">{record.email}</td>
+      {/* Changed from record.savedAt to record.saved_at */}
+      <td className="data-cell-date">{record.saved_at}</td> 
+      <td style={{ textAlign: 'center', padding: '8px' }}>
+        <button 
+          className="delete-btn" 
+          onClick={(e) => handleDeleteRow(record.id, record.email, e)} // Pass record.id directly here
+        >
+          Remove
+        </button>
+      </td>
+    </tr>
+  ))}
+</tbody>
                 </table>
               </div>
 

