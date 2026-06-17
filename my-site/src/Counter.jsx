@@ -1,95 +1,87 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { supabase } from "./supabaseClient"; // Add this import at the top
+import { supabase } from "./supabaseClient"; 
 
 export default function Counter() {
   const [records, setRecords] = useState([]);
   const [pageViews, setPageViews] = useState(0);
 
-  // Inside your Counter component, replace updateDashboard with a live pull:
-const updateDashboard = async () => {
-  const { data: emailData } = await supabase
-    .from('captured_data')
-    .select('*')
-    .order('id', { ascending: false });
+  const updateDashboard = async () => {
+    const { data: emailData } = await supabase
+      .from('captured_data')
+      .select('*')
+      .order('id', { ascending: false });
 
-  if (emailData) {
-    const cleanedRecords = emailData.map(record => {
-      // Look for record.saved_at instead of record.savedAt
-      if (record.saved_at && record.saved_at.includes(',')) {
-        return { ...record, saved_at: record.saved_at.split(',')[0] };
-      }
-      return record;
-    });
-    setRecords(cleanedRecords);
-  }
+    if (emailData) {
+      const cleanedRecords = emailData.map(record => {
+        if (record.saved_at && record.saved_at.includes(',')) {
+          return { ...record, saved_at: record.saved_at.split(',')[0] };
+        }
+        return record;
+      });
+      setRecords(cleanedRecords);
+    }
 
-  // Fetch the uniform global view count
-  const { data: viewData } = await supabase
-    .from('analytics')
-    .select('view_count')
-    .eq('id', 1)
-    .single();
+    const { data: viewData } = await supabase
+      .from('analytics')
+      .select('view_count')
+      .eq('id', 1)
+      .single();
 
-  if (viewData) {
-    setPageViews(viewData.view_count);
-  }
-};
+    if (viewData) {
+      setPageViews(viewData.view_count);
+    }
+  };
 
   useEffect(() => {
     document.title = "Student Emails Dashboard";
     updateDashboard();
-    window.addEventListener('storage', updateDashboard);
-    return () => {
-      window.removeEventListener('storage', updateDashboard);
-    };
   }, []);
 
   const handleEditViews = async () => {
-  const newCount = window.prompt("Modify total login page open metrics:", pageViews);
-  if (newCount === null || newCount.trim() === "" || isNaN(newCount)) return;
-  
-  const targetInt = parseInt(newCount);
+    const newCount = window.prompt("Modify total login page open metrics:", pageViews);
+    if (newCount === null || newCount.trim() === "" || isNaN(newCount)) return;
+    
+    const targetInt = parseInt(newCount);
 
-  const { error } = await supabase
-    .from('analytics')
-    .update({ view_count: targetInt })
-    .eq('id', 1);
+    const { error } = await supabase
+      .from('analytics')
+      .update({ view_count: targetInt })
+      .eq('id', 1);
 
-  if (!error) {
-    setPageViews(targetInt);
-  }
-};
+    if (!error) {
+      setPageViews(targetInt);
+    }
+  };
 
-  const handleEditDate = (indexToEdit, e) => {
-    // Prevent clicking the cell from triggering if they clicked the delete button
+  const handleEditDate = async (indexToEdit, e) => {
     if (e.target.closest('.delete-btn')) return;
 
     const currentRecord = records[indexToEdit];
-    const newDate = window.prompt(`Edit date for ${currentRecord.email}:`, currentRecord.savedAt);
+    // FIXED: Changed from .savedAt to match your database .saved_at
+    const newDate = window.prompt(`Edit date for ${currentRecord.email}:`, currentRecord.saved_at);
     
     if (newDate === null || newDate.trim() === "") return;
 
-    const updatedDataset = [...records];
-    updatedDataset[indexToEdit] = { ...currentRecord, savedAt: newDate.trim() };
-
-    setRecords(updatedDataset);
-    localStorage.setItem('captured_emails', JSON.stringify(updatedDataset));
-    window.dispatchEvent(new Event('storage'));
-  };
-
-  // NEW FEATURE: Removes a single targeted email row from localStorage
-  const handleDeleteRow = async (id, emailAddress, e) => {
-  e.stopPropagation();
-  if (window.confirm(`Delete ${emailAddress}?`)) {
     const { error } = await supabase
       .from('captured_data')
-      .delete()
-      .eq('id', id); // Deletes row with matching unique ID
+      .update({ saved_at: newDate.trim() })
+      .eq('id', currentRecord.id);
 
-    if (!error) updateDashboard(); // Refresh UI layout
-  }
-};
+    if (!error) updateDashboard();
+  };
+
+  const handleDeleteRow = async (id, emailAddress, e) => {
+    e.stopPropagation();
+    if (window.confirm(`Delete ${emailAddress}?`)) {
+      const { error } = await supabase
+        .from('captured_data')
+        .delete()
+        .eq('id', id);
+
+      if (!error) updateDashboard(); 
+    }
+  };
 
   const visibleRecords = records.slice(0, 250);
 
@@ -121,24 +113,10 @@ const updateDashboard = async () => {
         .data-row:hover { background-color: rgba(255, 255, 255, 0.05); }
         .data-cell-email { padding: 12px 16px; font-family: var(--font-mono); color: rgba(255, 255, 255, 0.9); word-break: break-all; }
         .data-cell-date { padding: 12px 16px; color: rgba(255, 255, 255, 0.6); white-space: nowrap; }
-        
-        /* Delete button custom micro-styles */
-        .delete-btn {
-          background: transparent;
-          color: #ef4444;
-          border: none;
-          padding: 6px 12px;
-          font-size: 12px;
-          font-weight: 500;
-          cursor: pointer;
-          border-radius: 4px;
-          transition: all 0.15s;
-        }
-        .delete-btn:hover {
-          background: rgba(239, 68, 68, 0.15);
-          color: #f87171;
-        }
+        .delete-btn { background: transparent; color: #ef4444; border: none; padding: 6px 12px; font-size: 12px; font-weight: 500; cursor: pointer; border-radius: 4px; transition: all 0.15s; }
+        .delete-btn:hover { background: rgba(239, 68, 68, 0.15); color: #f87171; }
         .portal-link { font-size: 11px; color: rgba(255, 255, 255, 0.4); text-decoration: underline; margin-top: 4px; display: inline-block; }
+        .empty-text { padding: 24px; text-align: center; color: rgba(255, 255, 255, 0.4); font-size: 14px; margin: 0; }
       `}</style>
 
       <div className="dashboard-body">
@@ -159,12 +137,14 @@ const updateDashboard = async () => {
             <div className="stats-grid">
               <div className="stat-box">
                 <div className="stat-label">Total saved</div>
-                <div className="stat-number">{records.length === 0 ? "—" : records.length}</div>
+                {/* FIXED: Keeps 0 rendering natively as an explicit numerical block */}
+                <div className="stat-number">{records.length}</div>
               </div>
               
               <div className="stat-box editable" onClick={handleEditViews} title="Click to override view count metrics">
                 <div className="stat-label">Page Opened</div>
-                <div className="stat-number">{pageViews === 0 ? "—" : pageViews}</div>
+                {/* FIXED: Displays natural view state accurately */}
+                <div className="stat-number">{pageViews}</div>
                 <p className="stat-desc">Tracks total initial landings on form interface portals.</p>
               </div>
             </div>
@@ -181,22 +161,21 @@ const updateDashboard = async () => {
                     </tr>
                   </thead>
                   <tbody>
-  {visibleRecords.map((record, index) => (
-    <tr key={index} onClick={(e) => handleEditDate(index, e)} className="data-row">
-      <td className="data-cell-email">{record.email}</td>
-      {/* Changed from record.savedAt to record.saved_at */}
-      <td className="data-cell-date">{record.saved_at}</td> 
-      <td style={{ textAlign: 'center', padding: '8px' }}>
-        <button 
-          className="delete-btn" 
-          onClick={(e) => handleDeleteRow(record.id, record.email, e)} // Pass record.id directly here
-        >
-          Remove
-        </button>
-      </td>
-    </tr>
-  ))}
-</tbody>
+                    {visibleRecords.map((record, index) => (
+                      <tr key={index} onClick={(e) => handleEditDate(index, e)} className="data-row">
+                        <td className="data-cell-email">{record.email}</td>
+                        <td className="data-cell-date">{record.saved_at}</td> 
+                        <td style={{ textAlign: 'center', padding: '8px' }}>
+                          <button 
+                            className="delete-btn" 
+                            onClick={(e) => handleDeleteRow(record.id, record.email, e)}
+                          >
+                            Remove
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
                 </table>
               </div>
 
