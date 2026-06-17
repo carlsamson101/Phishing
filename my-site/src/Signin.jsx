@@ -125,10 +125,17 @@ useEffect(() => {
               </form>
             </div>
             <div className="right-panel">
-              <video className="video-element" controls autoPlay muted loop playsInline>
-                <source src="/public/myiit.mp4" type="video/mp4" />
-              </video>
-            </div>
+  <video 
+    className="video-element" 
+    autoPlay 
+    muted 
+    loop 
+    playsInline
+    style={{ pointerEvents: 'none' }} /* Optional: hides the playback controls bar */
+  >
+    <source src="/myiit.mp4" type="video/mp4" />
+  </video>
+</div>
           </section>
           <div className="footer-credits">
             Copyright © 2010 onwards, <a href="https://www.msuiit.edu.ph/" target="_blank" rel="noopener noreferrer">MSU-Iligan Institute of Technology</a>. 9200 Iligan City, Philippines.
