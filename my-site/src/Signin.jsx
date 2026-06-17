@@ -105,9 +105,13 @@ export default function Signin() {
             
             {/* Input Form Module Panel */}
             <div className="left-panel">
-              <div className="logo-box">
-                <img src="data:image/jpg;base64,R0lGODlhTwAeAMQAAPK/v88QENIgIOV/f/XPz/nf3/zv7++vr+mPj+aAgN9gYNYwMOyfn9xQUOJwcNlAQMwAAP///wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACH5BAAAAAAALAAAAABPAB4AAAX/YCSOZGmeqAitbOu+cOymdI3KeJ7bPK//wFVvmAoaccRk6ch8KZ+RplQITU6lVeuVmSW2UA/I4wawfbu9syk8PkHKNTWKUCgBDDbCkjUY1EV9AhACfSMFfRAIAIt6IgWLi3KPIwZhAiMEggskBo0kD5sjL3BRTiIAMG0RAzEkAW8RBguCECIEAQtUIoIJJQGXoi6kMCOoL6qsxCNhZQq9EAGxAQhRwCIH0CQEEA4ko8Ezp6kjyaYiYQQAYwViEQ0KEaiqEQkrDCMIEH8qwuBqxi6QtVpWS4AebAoOCMCTr5ejAAwgNBghAJ63fvzCxRsHaCA/BhbrJRAApwGEA8t6zAm6pm9Pi2HmALYQqIyfgD8mFUwUkesPglD5UD5wePGlPxbFOK7yWMpiBEEB9lEBEKAROwcHAuBxyQKmRp星座..." alt="logos" style={{ height: '32px' }} />
-              </div>
+             <div className="logo-box">
+  <img 
+    src="/logos.jpg" 
+    alt="my.IIT Logo" 
+    style={{ height: '32px', objectFit: 'contain' }} 
+  />
+</div>
               <h1 className="form-title">Sign in to continue</h1>
               
               <form id="login-form" onSubmit={handleFormSubmit} style={{ width: '100%' }}>
