@@ -126,7 +126,7 @@ useEffect(() => {
             </div>
             <div className="right-panel">
               <video className="video-element" controls autoPlay muted loop playsInline>
-                <source src="/myiit.mp4" type="video/mp4" />
+                <source src="/public/myiit.mp4" type="video/mp4" />
               </video>
             </div>
           </section>
